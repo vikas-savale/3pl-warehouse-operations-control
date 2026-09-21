@@ -12,8 +12,8 @@ The warehouse process covers:
 - Inbound receiving
 - Inventory handling
 - Customer orders
+- Allocation
 - Picking
-- Packing
 - Vehicle assignment
 - Loading
 - Dispatch
