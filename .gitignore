@@ -1,0 +1,22 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated large datasets
+data/generated/
+
+# Excel temporary files
+~$*.xlsx
+~$*.xlsm
+
+# Local configuration
+.env
+.env.*
