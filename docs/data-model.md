@@ -4,7 +4,7 @@
 
 This document defines the data model for the 3PL Warehouse Operations & Dispatch Control System.
 
-The model covers warehouse operations, inventory, customer orders, fulfillment, dispatch, billing and stock reconciliation.
+The model covers warehouse operations, inventory, customer orders, fulfillment, dispatch, billing, commercial analysis and stock reconciliation.
 
 ---
 
@@ -19,7 +19,23 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 # 3. Master Data
 
-## 3.1 warehouses
+## 3.1 manufacturing_plants
+
+**Grain:** One row = one manufacturing plant.
+
+| Column        | Type    | Description                         |
+| ------------- | ------- | ----------------------------------- |
+| `plant_id`    | Text    | Internal plant identifier           |
+| `plant_code`  | Text    | Five-digit manufacturing plant code |
+| `plant_name`  | Text    | Manufacturing plant name            |
+| `city`        | Text    | Plant city                          |
+| `state`       | Text    | Plant state                         |
+| `region`      | Text    | Operating region                    |
+| `active_flag` | Boolean | Current active status               |
+
+---
+
+## 3.2 warehouses
 
 **Grain:** One row = one warehouse.
 
@@ -40,7 +56,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.2 locations
+## 3.3 locations
 
 **Grain:** One row = one physical warehouse location.
 
@@ -75,37 +91,67 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.3 products
+## 3.4 products
 
 **Grain:** One row = one material/product variant.
 
-| Column                      | Type    | Description                            |
-| --------------------------- | ------- | -------------------------------------- |
-| `product_id`                | Text    | Internal product identifier            |
-| `material_code`             | Text    | Business material code                 |
-| `product_name`              | Text    | Product name                           |
-| `brand_name`                | Text    | Brand                                  |
-| `product_category`          | Text    | Product category                       |
-| `product_subcategory`       | Text    | Product subcategory                    |
-| `pack_type`                 | Text    | Main package type                      |
-| `pack_size_label`           | Text    | Human-readable pack size               |
-| `each_per_pac`              | Integer | Individual units per PAC               |
-| `base_qty_per_pac`          | Decimal | Base quantity per PAC                  |
-| `base_uom`                  | Text    | Base quantity unit                     |
-| `density_kg_per_l`          | Decimal | Density assumption for liquid products |
-| `packaging_tare_kg_per_pac` | Decimal | Packaging weight per PAC               |
-| `active_flag`               | Boolean | Current active status                  |
+| Column                           | Type    | Description                            |
+| -------------------------------- | ------- | -------------------------------------- |
+| `product_id`                     | Text    | Internal product identifier            |
+| `material_code`                  | Text    | Business material code                 |
+| `product_name`                   | Text    | Product name                           |
+| `brand_name`                     | Text    | Brand                                  |
+| `product_category`               | Text    | Product category                       |
+| `product_subcategory`            | Text    | Product subcategory                    |
+| `primary_manufacturing_plant_id` | Text    | Primary manufacturing plant            |
+| `pack_type`                      | Text    | Main package type                      |
+| `pack_size_label`                | Text    | Human-readable pack size               |
+| `each_per_pac`                   | Integer | Individual units per PAC               |
+| `base_qty_per_pac`               | Decimal | Base quantity per PAC                  |
+| `base_uom`                       | Text    | Base quantity unit                     |
+| `density_kg_per_l`               | Decimal | Density assumption for liquid products |
+| `packaging_tare_kg_per_pac`      | Decimal | Packaging weight per PAC               |
+| `active_flag`                    | Boolean | Current active status                  |
 
 `base_uom` values:
 
 - `L`
 - `KG`
 
-`batch_no` is not stored in the product master because one material can have multiple batches.
+`batch_no` is not stored in the product master because one product variant can exist in multiple batches.
 
 ---
 
-## 3.4 customers
+## 3.5 product_batches
+
+**Grain:** One row = one batch of one product variant.
+
+| Column                   | Type    | Description                                            |
+| ------------------------ | ------- | ------------------------------------------------------ |
+| `batch_id`               | Text    | Internal batch identifier                              |
+| `product_id`             | Text    | Product represented by the batch                       |
+| `manufacturing_plant_id` | Text    | Actual manufacturing plant                             |
+| `batch_no`               | Text    | 10-digit batch number in `#####-#####` format          |
+| `batch_date`             | Date    | Batch production date                                  |
+| `basic_price_per_each`   | Decimal | Basic price represented by the final five batch digits |
+| `unit_cost_per_base_uom` | Decimal | Product cost per base quantity unit                    |
+| `active_flag`            | Boolean | Current batch status                                   |
+
+Batch format:
+
+```text
+#####-#####
+```
+
+The first five digits identify the manufacturing plant.
+
+The last five digits represent the basic price of one individual unit contained in the package.
+
+The plant code embedded in `batch_no` must match `manufacturing_plant_id`.
+
+---
+
+## 3.6 customers
 
 **Grain:** One row = one customer account.
 
@@ -144,7 +190,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.5 customer_locations
+## 3.7 customer_locations
 
 **Grain:** One row = one customer location.
 
@@ -171,9 +217,9 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.6 suppliers
+## 3.8 suppliers
 
-**Grain:** One row = one supplier or supplying plant.
+**Grain:** One row = one supplier or supplying source.
 
 | Column           | Type    | Description                  |
 | ---------------- | ------- | ---------------------------- |
@@ -188,7 +234,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.7 transporters
+## 3.9 transporters
 
 **Grain:** One row = one transport service provider.
 
@@ -203,7 +249,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.8 vehicles
+## 3.10 vehicles
 
 **Grain:** One row = one physical vehicle.
 
@@ -219,7 +265,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 ---
 
-## 3.9 employees
+## 3.11 employees
 
 **Grain:** One row = one warehouse employee.
 
@@ -286,17 +332,17 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 **Grain:** One row = one product line within one sales order.
 
-| Column                   | Type    | Description                    |
-| ------------------------ | ------- | ------------------------------ |
-| `order_line_id`          | Text    | Internal order-line identifier |
-| `order_id`               | Text    | Parent order                   |
-| `line_no`                | Integer | Line number                    |
-| `product_id`             | Text    | Ordered product                |
-| `ordered_pac`            | Integer | Ordered pack quantity          |
-| `ordered_base_qty`       | Decimal | Ordered base quantity          |
-| `base_uom`               | Text    | Base quantity unit             |
-| `unit_rate_per_base_uom` | Decimal | Rate per base quantity unit    |
-| `line_value`             | Decimal | Order line value               |
+| Column                   | Type    | Description                         |
+| ------------------------ | ------- | ----------------------------------- |
+| `order_line_id`          | Text    | Internal order-line identifier      |
+| `order_id`               | Text    | Parent order                        |
+| `line_no`                | Integer | Line number                         |
+| `product_id`             | Text    | Ordered product                     |
+| `ordered_pac`            | Integer | Ordered pack quantity               |
+| `ordered_base_qty`       | Decimal | Ordered base quantity               |
+| `base_uom`               | Text    | Base quantity unit                  |
+| `unit_rate_per_base_uom` | Decimal | Selling rate per base quantity unit |
+| `line_value`             | Decimal | Order line value                    |
 
 ---
 
@@ -439,19 +485,22 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 **Grain:** One row = one planned vehicle/trip schedule.
 
-| Column              | Type     | Description                  |
-| ------------------- | -------- | ---------------------------- |
-| `schedule_id`       | Text     | Internal schedule identifier |
-| `warehouse_id`      | Text     | Dispatch warehouse           |
-| `vehicle_id`        | Text     | Planned vehicle              |
-| `scheduled_date`    | Date     | Schedule date                |
-| `scheduled_arrival` | Datetime | Planned vehicle arrival      |
-| `actual_arrival`    | Datetime | Actual vehicle arrival       |
-| `dock_slot`         | Text     | Planned dock slot            |
-| `dock_no`           | Text     | Dock number                  |
-| `route_type`        | Text     | Route type                   |
-| `vehicle_status`    | Text     | Schedule status              |
-| `planned_departure` | Datetime | Planned departure            |
+| Column                   | Type     | Description                           |
+| ------------------------ | -------- | ------------------------------------- |
+| `schedule_id`            | Text     | Internal schedule identifier          |
+| `warehouse_id`           | Text     | Dispatch warehouse                    |
+| `vehicle_id`             | Text     | Planned vehicle                       |
+| `scheduled_date`         | Date     | Schedule date                         |
+| `scheduled_arrival`      | Datetime | Planned vehicle arrival               |
+| `actual_arrival`         | Datetime | Actual vehicle arrival                |
+| `dock_slot`              | Text     | Planned dock slot                     |
+| `dock_no`                | Text     | Dock number                           |
+| `route_type`             | Text     | Route type                            |
+| `vehicle_status`         | Text     | Schedule status                       |
+| `planned_departure`      | Datetime | Planned departure                     |
+| `actual_departure`       | Datetime | Actual departure                      |
+| `planned_transport_cost` | Decimal  | Planned transporter cost for the trip |
+| `actual_transport_cost`  | Decimal  | Transporter cost for the trip         |
 
 `route_type` values:
 
@@ -535,7 +584,7 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 | `lr_number`                  | Text    | Lorry receipt number           |
 | `place_of_supply_state`      | Text    | Place of supply state          |
 | `place_of_supply_state_code` | Text    | State code                     |
-| `freight_amount`             | Decimal | Freight amount                 |
+| `customer_freight_amount`    | Decimal | Freight charged to customer    |
 | `taxable_value`              | Decimal | Taxable invoice value          |
 | `cgst_amount`                | Decimal | CGST amount                    |
 | `sgst_amount`                | Decimal | SGST amount                    |
@@ -617,6 +666,9 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 # 10. Key Relationships
 
+- `manufacturing_plants.plant_id` -> `products.primary_manufacturing_plant_id`
+- `manufacturing_plants.plant_id` -> `product_batches.manufacturing_plant_id`
+
 - `warehouses.warehouse_id` -> `locations.warehouse_id`
 - `warehouses.warehouse_id` -> `order_allocations.warehouse_id`
 - `warehouses.warehouse_id` -> `inbound_receipts.warehouse_id`
@@ -625,6 +677,16 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 - `warehouses.warehouse_id` -> `vehicle_schedule.warehouse_id`
 - `warehouses.warehouse_id` -> `dispatch_events.warehouse_id`
 - `warehouses.warehouse_id` -> `stock_audits.warehouse_id`
+
+- `products.product_id` -> `product_batches.product_id`
+- `products.product_id` -> `order_lines.product_id`
+- `products.product_id` -> `order_allocations.product_id`
+- `products.product_id` -> `inbound_receipts.product_id`
+- `products.product_id` -> `inventory_events.product_id`
+- `products.product_id` -> `picking_events.product_id`
+- `products.product_id` -> `dispatch_events.product_id`
+- `products.product_id` -> `invoice_lines.product_id`
+- `products.product_id` -> `stock_audits.product_id`
 
 - `customers.customer_id` -> `customer_locations.customer_id`
 - `customers.customer_id` -> `orders.customer_id`
@@ -646,14 +708,8 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 - `vehicles.vehicle_id` -> `dispatch_events.vehicle_id`
 - `vehicles.vehicle_id` -> `invoices.vehicle_id`
 
-- `products.product_id` -> `order_lines.product_id`
-- `products.product_id` -> `order_allocations.product_id`
-- `products.product_id` -> `inbound_receipts.product_id`
-- `products.product_id` -> `inventory_events.product_id`
-- `products.product_id` -> `picking_events.product_id`
-- `products.product_id` -> `dispatch_events.product_id`
-- `products.product_id` -> `invoice_lines.product_id`
-- `products.product_id` -> `stock_audits.product_id`
+- `employees.employee_id` -> `picking_events.picker_id`
+- `employees.employee_id` -> `stock_audits.counted_by_employee_id`
 
 - `orders.order_id` -> `order_lines.order_id`
 - `orders.order_id` -> `dispatch_events.order_id`
@@ -666,9 +722,6 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 
 - `order_allocations.allocation_id` -> `picking_events.allocation_id`
 
-- `employees.employee_id` -> `picking_events.picker_id`
-- `employees.employee_id` -> `stock_audits.counted_by_employee_id`
-
 - `vehicle_schedule.schedule_id` -> `dispatch_events.schedule_id`
 
 - `invoices.invoice_id` -> `invoice_lines.invoice_id`
@@ -680,10 +733,22 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 - `locations.location_id` -> `picking_events.location_id`
 - `locations.location_id` -> `stock_audits.location_id`
 
+- `product_batches.(product_id, batch_no)` -> `order_allocations.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `inbound_receipts.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `inventory_events.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `picking_events.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `dispatch_events.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `invoice_lines.(product_id, batch_no)`
+- `product_batches.(product_id, batch_no)` -> `stock_audits.(product_id, batch_no)`
+
 ---
 
 # 11. Core Data Validation
 
+- `plant_code` must contain exactly five numeric digits.
+- The first five digits of `batch_no` must match `manufacturing_plants.plant_code`.
+- The last five digits of `batch_no` must represent the basic price per individual unit.
+- `batch_no` must match the related product and manufacturing plant.
 - `ordered_base_qty` must match the product quantity represented by `ordered_pac`.
 - Cumulative `allocated_pac` must not exceed the ordered pack quantity for an order line.
 - Cumulative `allocated_base_qty` must not exceed the ordered base quantity for an order line.
@@ -695,3 +760,5 @@ The model covers warehouse operations, inventory, customer orders, fulfillment, 
 - `physical_total_qty` must equal good plus damage plus leakage quantity.
 - `variance_qty` must equal physical total quantity minus system quantity.
 - Transaction quantities must use the same `base_uom` as the product.
+- `customer_freight_amount` must remain separate from `actual_transport_cost`.
+- Profit, margin and contribution values must be derived from source values rather than stored as raw transaction fields.
